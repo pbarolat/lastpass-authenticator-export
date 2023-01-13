@@ -128,49 +128,20 @@ def decrypt_user_data(user_data, key):
     return mfa_data
 
 
-def write_out(mfa_data):
+def write_out(totp, uri, destdir):
 
-    if not os.path.isdir('export'):
-        os.makedirs('export')
-
-    with open('export/export.json', 'w') as f:
-        f.write(json.dumps(mfa_data))
-
-    table = "<table>\n"
-    table += "  <tr>\n"
-    table += "    <th>Issuer</th>\n"
-    table += "    <th>Account</th>\n"
-    table += "    <th>QR</th>\n"
-    table += "  </tr>\n"
-
-
-    for account in mfa_data['accounts']:
-        totp = pyotp.TOTP(account['secret'].replace(' ', ''))
-
-        uri = totp.provisioning_uri(
-            name = account['userName'],
-            issuer_name = account['issuerName']
-        )
-
-        img = qrcode.make(uri)
-        img.save(f'export/{account["accountID"]}.png')
-
-        table += "  <tr>\n"
-        table += f"    <td>{account['issuerName']}</td>\n"
-        table += f"    <td>{account['userName']}</td>\n"
-        table += f"    <td><img src='{account['accountID']}.png' width='200' height='200'></td>\n"
-        table += f"  </tr>\n"
-
-    table += "</table>"
-
-    with open('export/export.html', 'w') as f:
-        f.write(table)
-
+ 
+    img = qrcode.make(uri)
+    name = totp.name.replace(":", "")
+    try:
+        img.save(f"{destdir}/{totp.issuer} - {name}.png")
+        print(f"Created image {destdir}/{totp.issuer} - {name}.png")
+    except Exception as error:
+        print("Problem creating image")
 
 def get_args():
     parser = argparse.ArgumentParser(description='Export LastPass authenticator QR Codes.')
-    parser.add_argument('-s', '--sourcedir', help='Source Directory', required=True)
-    parser.add_argument('-o', '--destdir', help='Destination Directory', required=False)
+    parser.add_argument('-d', '--destdir', help='Destination Directory', required=True)
 
     return parser.parse_args()
 
@@ -178,7 +149,7 @@ def get_args():
 def main():
 
     args = get_args()
-    sourcedir = args.sourcedir
+ 
     destdir = args.destdir
     print("Please enter otp URL")
     totpinput = getpass.getpass()
@@ -192,36 +163,10 @@ def main():
     # Below are the attributes for the otp object
     #['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'at', 'byte_secret', 'digest', 'digits', 'generate_otp', 'int_to_bytestring', 'interval', 'issuer', 'name', 'now', 'provisioning_uri', 'secret', 'timecode', 'verify']
 
-    exit
-    # Check that the directory exists and that the file exists
-    # Read the export file
-    fullpath =os.path.join(sourcedir, 'export.json')
-    if path.exists(fullpath):
-        with open(fullpath, 'r') as plaintext:
-            mfa_data = json.loads(plaintext.read())
-    else:
-        print("The path " + fullpath + " does not exist")
+
         exit
-    # Determine if the item already exists (based on Issuer and list the usernames for selection)
-    foundissuer=False
-    accounts = []
-    for account in mfa_data['accounts']:
-        if (account['issuerName'] == totp.issuer):
-            foundissuer=True
-            accounts.append(account)
-           
-    if foundissuer:
-        print("Issuer found")  
-    else:
-        print("Issuer not found")
-    exit
-    # If it does, prompt with selection of username or option to create new
-    # If users select update, update the appropriat entry
-    # Otherwise if item does not or user selects create new, add it
-    # Back up current export file
-    # Write out data to export file
-    # Then call write_out
-    write_out(mfa_data)
+ 
+    write_out(totp, totpinput, destdir)
 
 
 if __name__ == '__main__':
