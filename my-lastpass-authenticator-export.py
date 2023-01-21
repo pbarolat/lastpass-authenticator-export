@@ -11,6 +11,9 @@ import pyotp
 import qrcode
 import argparse
 import getpass
+import glob
+import cv2
+import pathlib
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
@@ -142,19 +145,44 @@ def write_out(totp, uri, destdir):
 def get_args():
     parser = argparse.ArgumentParser(description='Export LastPass authenticator QR Codes.')
     parser.add_argument('-d', '--destdir', help='Destination Directory', required=True)
+    parser.add_argument('-i', '--qrimage', help='QR image file', required=False)
 
     return parser.parse_args()
 
+def read_qr_code(filename):
+    """Read an image and read the QR code.
+    
+    Args:
+        filename (string): Path to file
+    
+    Returns:
+        qr (string): Value from QR code
+    """
+    
+    try:
+        img = cv2.imread(filename)
+        detect = cv2.QRCodeDetector()
+        value, points, straight_qrcode = detect.detectAndDecode(img)
+        return value
+    except:
+        return
 
 def main():
 
     args = get_args()
  
     destdir = args.destdir
-    print("Please enter otp URL")
-    totpinput = getpass.getpass()
-
-    # Parse the url, checking for errors.
+    if args.qrimage is None:
+        print("Please enter otp URL")
+        totpinput = getpass.getpass()
+    else:
+        my_file = pathlib.Path(args.qrimage)
+        if my_file.is_file():
+            totpinput = read_qr_code(args.qrimage)
+        else:
+            print(args.qrimage + " is not a valid file")
+            os._quit()
+        
     try:
         totp = pyotp.parse_uri(totpinput)
     except Exception as error:
