@@ -14,6 +14,10 @@ import getpass
 import glob
 import cv2
 import pathlib
+from PIL import Image
+from pyzbar import pyzbar
+
+
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
@@ -163,8 +167,13 @@ def read_qr_code(filename):
         img = cv2.imread(filename)
         detect = cv2.QRCodeDetector()
         value, points, straight_qrcode = detect.detectAndDecode(img)
+        if value == "":
+            img = Image.open(filename)
+            list = pyzbar.decode(img)
+            value = list[0].data
         return value
-    except:
+    except Exception as error:
+        print("Error", error)
         return
 
 def main():
@@ -181,13 +190,13 @@ def main():
             totpinput = read_qr_code(args.qrimage)
         else:
             print(args.qrimage + " is not a valid file")
-            os._quit()
+            os._exit(1)
         
     try:
         totp = pyotp.parse_uri(totpinput)
     except Exception as error:
         print("The OTP URL entered is incorrect", error)
-        os._exit()
+        os._exit(1)
 
     write_out(totp, totpinput, destdir)
 
