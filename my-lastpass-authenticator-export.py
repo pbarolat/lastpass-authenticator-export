@@ -193,7 +193,17 @@ def main():
             os._exit(1)
         
     try:
+        
+
         totp = pyotp.parse_uri(totpinput)
+        if totp.issuer in totp.name:
+            print("Issuer is in name")
+        else:
+            print("Issuer is *not* in name.  Revising")
+            totpinput=totpinput.replace(totp.name + "?", totp.issuer + ":" + totp.name + "?")
+            #totp.name=totp.issuer + ":" + totp.name
+            #print(totp.name)
+            totp = pyotp.parse_uri(totpinput)
     except Exception as error:
         print("The OTP URL entered is incorrect", error)
         os._exit(1)
