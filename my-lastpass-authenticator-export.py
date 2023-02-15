@@ -150,7 +150,7 @@ def get_args():
     parser = argparse.ArgumentParser(description='Export LastPass authenticator QR Codes.')
     parser.add_argument('-d', '--destdir', help='Destination Directory', required=True)
     parser.add_argument('-i', '--qrimage', help='QR image file', required=False)
-
+    parser.add_argument('-u', '--updateissuer', help='Update name with issuer', required=False)
     return parser.parse_args()
 
 def read_qr_code(filename):
@@ -181,6 +181,7 @@ def main():
     args = get_args()
  
     destdir = args.destdir
+    updateissuer = args.updateissuer
     if args.qrimage is None:
         print("Please enter otp URL")
         totpinput = getpass.getpass()
@@ -196,14 +197,15 @@ def main():
         
 
         totp = pyotp.parse_uri(totpinput)
-        #if totp.issuer in totp.name:
-        #    print("Issuer is in name")
-        #else:
-        #    print("Issuer is *not* in name.  Revising")
-        #    totpinput=totpinput.replace(totp.name + "?", totp.issuer + ":" + totp.name + "?")
-            #totp.name=totp.issuer + ":" + totp.name
-            #print(totp.name)
-         #   totp = pyotp.parse_uri(totpinput)
+        if updateissuer is not None:
+            if totp.issuer in totp.name:
+                print("Issuer is in name")
+            else:
+                print("Issuer is *not* in name.  Revising")
+                totpinput=totpinput.replace(totp.name + "?", totp.issuer + ":" + totp.name + "?")
+                #totp.name=totp.issuer + ":" + totp.name
+                #print(totp.name)
+                totp = pyotp.parse_uri(totpinput)
     except Exception as error:
         print("The OTP URL entered is incorrect", error)
         os._exit(1)
